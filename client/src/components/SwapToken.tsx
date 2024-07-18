@@ -54,7 +54,7 @@ const SwapToken = () => {
    };
 
    useEffect(() => {
-      const handleAccountsChanged = async (accounts) => {
+      const handleAccountsChanged = async (accounts: any) => {
          if (accounts.length > 0) {
             const provider = new ethers.providers.Web3Provider(window.ethereum, undefined);
             const signer = provider.getSigner();
@@ -118,7 +118,7 @@ const SwapToken = () => {
    const handleAmountChange = (e: any) => {
       const value = e.target.value;
       setAmount(value);
-      setEquivalent(value * rate); // Tỉ giá là 100
+      setEquivalent(value * rate);
    };
 
    const handleBuyToken = async () => {
