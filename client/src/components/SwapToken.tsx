@@ -42,7 +42,8 @@ const SwapToken = () => {
                const signer = provider.getSigner();
                const address = await signer.getAddress();
                setWeb3Provider(provider);
-               setAddress(address)
+               setAddress(address);
+               localStorage.getItem("isWalletConnected") === "true" || localStorage.setItem("isWalletConnected", "true");
             } else {
                Swal.fire('Opps', 'Không tài khoản nào được chọn', 'error');
             }
@@ -51,6 +52,64 @@ const SwapToken = () => {
          }
       }
    };
+
+   useEffect(() => {
+      const handleAccountsChanged = async (accounts) => {
+         if (accounts.length > 0) {
+            const provider = new ethers.providers.Web3Provider(window.ethereum, undefined);
+            const signer = provider.getSigner();
+            const address = await signer.getAddress();
+            setWeb3Provider(provider);
+            setAddress(address);
+         } else {
+            setWeb3Provider(null);
+            setAddress("");
+            localStorage.removeItem("isWalletConnected");
+         }
+      };
+
+      const handleDisconnect = () => {
+         setWeb3Provider(null);
+         setAddress("");
+         localStorage.removeItem("isWalletConnected");
+      };
+
+      if (window.ethereum) {
+         window.ethereum.on("accountsChanged", handleAccountsChanged);
+         window.ethereum.on("disconnect", handleDisconnect);
+      }
+
+      return () => {
+         if (window.ethereum) {
+            window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
+            window.ethereum.removeListener("disconnect", handleDisconnect);
+         }
+      };
+   }, []);
+
+   useEffect(() => {
+      const checkWalletConnection = async () => {
+         if (localStorage.getItem("isWalletConnected") === "true") {
+            if (window.ethereum) {
+               try {
+                  const provider = new ethers.providers.Web3Provider(window.ethereum, undefined);
+                  const accounts = await provider.send("eth_accounts", []);
+                  if (accounts.length > 0) {
+                     const signer = provider.getSigner();
+                     const address = await signer.getAddress();
+                     setWeb3Provider(provider);
+                     setAddress(address);
+                  } else {
+                     Swal.fire('Opps', 'Không tài khoản nào được kết nối', 'error');
+                  }
+               } catch (error) {
+                  console.log(error);
+               }
+            }
+         }
+      }
+      checkWalletConnection();
+   }, [])
 
    const handleTokenChange = (e: any) => {
       setNameToken(e.target.value);
