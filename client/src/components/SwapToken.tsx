@@ -7,6 +7,7 @@ import { ethers } from 'ethers';
 import Swal from 'sweetalert2';
 import Loading from './Loading.tsx';
 import SuccessModal from './SuccessModal.tsx';
+import LCKContract from '../contracts/LCKContract.ts';
 
 declare var window: any;
 
@@ -19,6 +20,7 @@ const SwapToken = () => {
 
    const [web3Provider, setWeb3Provider] = useState<any>();
    const [address, setAddress] = useState('');
+   const [balance, setBalance] = useState(0);
    const [txHash, setTxHash] = useState('');
    const [isLoading, setIsLoading] = useState(false);
    const [isOpenModal, setIsOpenModal] = useState(false);
@@ -52,6 +54,18 @@ const SwapToken = () => {
          }
       }
    };
+
+   const getBalance = async () => {
+      if (web3Provider && address) {
+         const lckContract = new LCKContract(web3Provider);
+         const balance = await lckContract.balanceOf(address);
+         setBalance(balance);
+      }
+   }
+
+   useEffect(() => {
+      getBalance();
+   }, [address])
 
    useEffect(() => {
       const handleAccountsChanged = async (accounts: any) => {
@@ -163,14 +177,16 @@ const SwapToken = () => {
          {isOpenModal && <SuccessModal setIsOpenModal={setIsOpenModal} txHash={txHash} title='Mua token LCK' />}
          <header className="bg-gray-800 text-white p-4 flex justify-between items-center">
             <h1 className="text-2xl">ICO Project</h1>
-            {(address && web3Provider) ? address :
-               <button
-                  onClick={handleWalletConnect}
-                  className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-[4px] px-4 rounded flex items-center"
-               >
-                  <FaWallet className="mr-2" />
-                  Connect Wallet
-               </button>}
+            <div>
+               {(address && web3Provider) ? <>{address} | <span className='text-green-400'> {balance} LCK</span></> :
+                  <button
+                     onClick={handleWalletConnect}
+                     className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-[4px] px-4 rounded flex items-center"
+                  >
+                     <FaWallet className="mr-2" />
+                     Connect Wallet
+                  </button>}
+            </div>
          </header>
 
          <main className="flex-grow p-4 mt-5">
