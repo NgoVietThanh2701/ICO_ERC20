@@ -17,7 +17,6 @@ const SwapToken = () => {
    const [equivalent, setEquivalent] = useState(0);
 
    const [rate, setRate] = useState(0);
-
    const [web3Provider, setWeb3Provider] = useState<any>();
    const [address, setAddress] = useState('');
    const [balance, setBalance] = useState(0);
@@ -31,30 +30,6 @@ const SwapToken = () => {
       setRate(_rate);
    }
 
-   useEffect(() => {
-      getRate();
-   }, []);
-
-   const handleWalletConnect = async () => {
-      if (window.ethereum) {
-         try {
-            const provider = new ethers.providers.Web3Provider(window.ethereum, undefined);
-            const accounts = await provider.send("eth_requestAccounts", []);
-            if (accounts.length > 0) {
-               const signer = provider.getSigner();
-               const address = await signer.getAddress();
-               setWeb3Provider(provider);
-               setAddress(address);
-               localStorage.getItem("isWalletConnected") === "true" || localStorage.setItem("isWalletConnected", "true");
-            } else {
-               Swal.fire('Opps', 'Không tài khoản nào được chọn', 'error');
-            }
-         } catch (error) {
-            console.log(error);
-         }
-      }
-   };
-
    const getBalance = async () => {
       if (web3Provider && address) {
          const lckContract = new LCKContract(web3Provider);
@@ -62,10 +37,39 @@ const SwapToken = () => {
          setBalance(balance);
       }
    }
+   const connectWallet = async (requestAccess = false) => {
+      if (window.ethereum) {
+         try {
+            const provider = new ethers.providers.Web3Provider(window.ethereum, undefined);
+            let accounts: any;
+            if (requestAccess) {
+               accounts = await provider.send("eth_requestAccounts", []);
+            } else {
+               accounts = await provider.send("eth_accounts", []);
+            }
+            if (accounts.length > 0) {
+               const signer = provider.getSigner();
+               const address = await signer.getAddress();
+               setWeb3Provider(provider);
+               setAddress(address);
+               localStorage.setItem("isWalletConnected", "true");
+               //await getBalance();
+            } else {
+               Swal.fire('Opps', 'Không tài khoản nào được chọn', 'error');
+               localStorage.removeItem("isWalletConnected");
+            }
+         } catch (error) {
+            console.log(error);
+            localStorage.removeItem("isWalletConnected");
+         }
+      }
+   };
 
    useEffect(() => {
-      getBalance();
-   }, [address])
+      if (localStorage.getItem("isWalletConnected") === "true") {
+         connectWallet(false); // Kiểm tra trạng thái kết nối hiện tại mà không yêu cầu quyền truy cập
+      }
+   }, [])
 
    useEffect(() => {
       const handleAccountsChanged = async (accounts: any) => {
@@ -78,6 +82,7 @@ const SwapToken = () => {
          } else {
             setWeb3Provider(null);
             setAddress("");
+            setBalance(0);
             localStorage.removeItem("isWalletConnected");
          }
       };
@@ -85,6 +90,7 @@ const SwapToken = () => {
       const handleDisconnect = () => {
          setWeb3Provider(null);
          setAddress("");
+         setBalance(0);
          localStorage.removeItem("isWalletConnected");
       };
 
@@ -101,29 +107,28 @@ const SwapToken = () => {
       };
    }, []);
 
+   console.log(balance)
+
    useEffect(() => {
-      const checkWalletConnection = async () => {
-         if (localStorage.getItem("isWalletConnected") === "true") {
-            if (window.ethereum) {
-               try {
-                  const provider = new ethers.providers.Web3Provider(window.ethereum, undefined);
-                  const accounts = await provider.send("eth_accounts", []);
-                  if (accounts.length > 0) {
-                     const signer = provider.getSigner();
-                     const address = await signer.getAddress();
-                     setWeb3Provider(provider);
-                     setAddress(address);
-                  } else {
-                     Swal.fire('Opps', 'Không tài khoản nào được kết nối', 'error');
-                  }
-               } catch (error) {
-                  console.log(error);
-               }
-            }
-         }
+      const handleBlock = () => {
+         getBalance(); // Gọi getBalance để cập nhật số dư khi có block mới
+      };
+      if (web3Provider) {
+         const provider = new ethers.providers.Web3Provider(window.ethereum, undefined);
+         provider.on("block", handleBlock);
+
+         return () => {
+            provider.removeListener("block", handleBlock); // Loại bỏ listener khi component bị unmount
+         };
       }
-      checkWalletConnection();
-   }, [])
+   }, [web3Provider]);
+
+   useEffect(() => {
+      getRate();
+      if (address) {
+         getBalance(); // Gọi getBalance khi component mount và có địa chỉ ví
+      }
+   }, [address]);
 
    const handleTokenChange = (e: any) => {
       setNameToken(e.target.value);
@@ -180,7 +185,7 @@ const SwapToken = () => {
             <div>
                {(address && web3Provider) ? <>{address} | <span className='text-green-400'> {balance} LCK</span></> :
                   <button
-                     onClick={handleWalletConnect}
+                     onClick={() => connectWallet(true)}
                      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-[4px] px-4 rounded flex items-center"
                   >
                      <FaWallet className="mr-2" />
