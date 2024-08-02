@@ -1,5 +1,5 @@
 import './index.css';
-import SwapToken from './components/SwapToken.tsx';
+import SwapToken from './components/SwapToken.jsx';
 
 function App() {
    return (

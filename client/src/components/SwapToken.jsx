@@ -8,8 +8,8 @@ import Swal from 'sweetalert2';
 import Loading from './Loading.tsx';
 import SuccessModal from './SuccessModal.tsx';
 import LCKContract from '../contracts/LCKContract.ts';
+import Jazzicon, { jsNumberForAddress } from 'react-jazzicon'
 
-declare var window: any;
 
 const SwapToken = () => {
    const [nameToken, setNameToken] = useState("");
@@ -17,7 +17,7 @@ const SwapToken = () => {
    const [equivalent, setEquivalent] = useState(0);
 
    const [rate, setRate] = useState(0);
-   const [web3Provider, setWeb3Provider] = useState<any>();
+   const [web3Provider, setWeb3Provider] = useState();
    const [address, setAddress] = useState('');
    const [balance, setBalance] = useState(0);
    const [txHash, setTxHash] = useState('');
@@ -41,7 +41,7 @@ const SwapToken = () => {
       if (window.ethereum) {
          try {
             const provider = new ethers.providers.Web3Provider(window.ethereum, undefined);
-            let accounts: any;
+            let accounts;
             if (requestAccess) {
                accounts = await provider.send("eth_requestAccounts", []);
             } else {
@@ -72,7 +72,7 @@ const SwapToken = () => {
    }, [])
 
    useEffect(() => {
-      const handleAccountsChanged = async (accounts: any) => {
+      const handleAccountsChanged = async (accounts) => {
          if (accounts.length > 0) {
             const provider = new ethers.providers.Web3Provider(window.ethereum, undefined);
             const signer = provider.getSigner();
@@ -107,8 +107,6 @@ const SwapToken = () => {
       };
    }, []);
 
-   console.log(balance)
-
    useEffect(() => {
       const handleBlock = () => {
          getBalance(); // Gọi getBalance để cập nhật số dư khi có block mới
@@ -130,11 +128,11 @@ const SwapToken = () => {
       }
    }, [address]);
 
-   const handleTokenChange = (e: any) => {
+   const handleTokenChange = (e) => {
       setNameToken(e.target.value);
    };
 
-   const handleAmountChange = (e: any) => {
+   const handleAmountChange = (e) => {
       const value = e.target.value;
       setAmount(value);
       setEquivalent(value * rate);
@@ -161,7 +159,7 @@ const SwapToken = () => {
       }
    }
 
-   const getTokenIcon = (nameToken: string) => {
+   const getTokenIcon = (nameToken) => {
       switch (nameToken) {
          case 'ETH':
             return <FaEthereum className="ml-2" size={22} />;
@@ -183,7 +181,7 @@ const SwapToken = () => {
          <header className="bg-gray-800 text-white p-4 flex justify-between items-center">
             <h1 className="text-2xl">ICO Project</h1>
             <div>
-               {(address && web3Provider) ? <>{address} | <span className='text-green-400'> {balance} LCK</span></> :
+               {(address && web3Provider) ? <div className='flex items-center gap-2'> {address} <span className='text-green-400'> {balance} LCK</span> <Jazzicon diameter={30} seed={jsNumberForAddress(address)} />  </div> :
                   <button
                      onClick={() => connectWallet(true)}
                      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-[4px] px-4 rounded flex items-center"
